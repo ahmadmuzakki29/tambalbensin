@@ -7,8 +7,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-
-import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.BufferedReader;
@@ -98,6 +96,7 @@ public abstract class InternetConnection implements Handler.Callback{
         thread.start();
     }
 
+
     @Override
     public boolean handleMessage(Message msg) {
         try{
@@ -105,8 +104,8 @@ public abstract class InternetConnection implements Handler.Callback{
 
             if(code==200){
                 String resp =msg.getData().getString("response");
-                final JSONArray result = new JSONArray(resp);
-                OnSuccess(result);
+
+                OnSuccess(resp);
             }else{
                 OnFailed();
             }
@@ -119,7 +118,7 @@ public abstract class InternetConnection implements Handler.Callback{
         return false;
     }
 
-    abstract protected void OnSuccess(JSONArray result);
+    abstract protected void OnSuccess(String result) throws JSONException;
 
     protected void TryAgain(){
         String url = data.getString("url");
@@ -254,4 +253,6 @@ public abstract class InternetConnection implements Handler.Callback{
         }
         return false;
     }
+
+
 }

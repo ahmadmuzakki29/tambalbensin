@@ -2,6 +2,7 @@ package tk.fathony.tambalbensin;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -9,7 +10,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,12 +27,16 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class MapsActivity extends ActionBarActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
@@ -41,12 +45,14 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
 
     private static final int REQUEST_PERMISSION_LOCATION = 0;
     private GoogleApiClient mGoogleApiClient;
-    private Location mLastLocation;
+    private Location myLocation;
     private GoogleMap map;
     private ArrayList<Bundle> data = new ArrayList<>();
     private ArrayList<Marker> mMarker = new ArrayList<>();
     private String jenis;
     private View mInfoWindow;
+    private String DIRECTION_URL = "https://maps.googleapis.com/maps/api/directions/json?";
+    private Polyline curPolyline;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,8 +84,8 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
         String url = data.getString("url");
         InternetConnection ic = new InternetConnection(this, true) {
             @Override
-            protected void OnSuccess(JSONArray result) {
-                parseData(result);
+            protected void OnSuccess(String result) throws JSONException {
+                parseData(new JSONArray(result));
             }
         };
         ic.get(url);
@@ -139,6 +145,7 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
         drawMarker();
         map.setOnMarkerClickListener(this);
         map.setInfoWindowAdapter(this);
+        map.setOnInfoWindowClickListener(this);
     }
 
     @Override
@@ -184,18 +191,18 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
                     REQUEST_PERMISSION_LOCATION);
             return;
         }
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+        myLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
 
-        if (mLastLocation != null) {
+        if (myLocation != null) {
             MarkerOptions opt = new MarkerOptions();
-            opt.position(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
+            opt.position(new LatLng(myLocation.getLatitude(), myLocation.getLongitude()));
             opt.icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_me));
             opt.visible(true);
             map.addMarker(opt);
 
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                    new LatLng(mLastLocation.getLatitude(), mLastLocation
+                    new LatLng(myLocation.getLatitude(), myLocation
                             .getLongitude()), 17));
         }
     }
@@ -227,25 +234,81 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
         ((TextView)mInfoWindow.findViewById(R.id.alamat)).setText(b.getString("alamat"));
 
         ((TextView)mInfoWindow.findViewById(R.id.keterangan)).setText(Html.fromHtml(b.getString("keterangan")));
-        mInfoWindow.findViewById(R.id.btnGotohere).setOnClickListener(new goToHereListener(b.getInt("id")));
         return mInfoWindow;
     }
 
     @Override
     public void onInfoWindowClick(Marker marker) {
-
+        if (curPolyline != null) {
+            curPolyline.remove();
+        }
+        for(int i=0;i<mMarker.size();i++){
+            if(mMarker.get(i).equals(marker)){
+                marker.hideInfoWindow();
+                requestDirection(i);
+            }
+        }
     }
 
-    private class goToHereListener implements View.OnClickListener{
-        private final int id;
+    private void requestDirection(int i) {
+        findViewById(R.id.loading).setVisibility(View.VISIBLE);
+        Bundle d = data.get(i);
+        String origin = "origin="+myLocation.getLatitude()+","+myLocation.getLongitude()+"&";
+        String destination = "destination="+d.getString("latitude")+","+d.getString("longitude");
 
-        goToHereListener(int id){
-            this.id = id;
+        String  url = DIRECTION_URL+origin+destination;
+        InternetConnection ic = new InternetConnection(this, true) {
+            @Override
+            protected void OnSuccess(String result) throws JSONException {
+                final JSONObject obj = new JSONObject(result);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        parseJSON(obj);
+                    }
+                });
+            }
+        };
+        ic.get(url);
+    }
+
+    private void parseJSON(JSONObject obj) {
+        DirectionsJSONParser parser = new DirectionsJSONParser();
+        List<List<HashMap<String, String>>> routes = parser.parse(obj);
+        drawRoutes(routes);
+    }
+
+    private void drawRoutes(List<List<HashMap<String, String>>> routes){
+        ArrayList<LatLng> points = null;
+        PolylineOptions lineOptions = null;
+
+        // Traversing through all the routes
+        for (int i = 0; i < routes.size(); i++) {
+            points = new ArrayList<LatLng>();
+            lineOptions = new PolylineOptions();
+
+            // Menginisialisasi i-th route
+            List<HashMap<String, String>> path = routes.get(i);
+
+            // Fetching all the points in i-th route
+            for (int j = 0; j < path.size(); j++) {
+                HashMap<String, String> point = path.get(j);
+
+                double lat = Double.parseDouble(point.get("lat"));
+                double lng = Double.parseDouble(point.get("lng"));
+                LatLng position = new LatLng(lat, lng);
+
+                points.add(position);
+            }
+
+            // Menambahkan semua points dalam rute ke LineOptions
+            lineOptions.addAll(points);
+            lineOptions.width(4);
+            lineOptions.color(Color.BLUE);
         }
-        @Override
-        public void onClick(View view) {
-            Log.i("jeki","id:"+id);
-        }
+
+        curPolyline = map.addPolyline(lineOptions);
+        findViewById(R.id.loading).setVisibility(View.GONE);
     }
 
     @Override
