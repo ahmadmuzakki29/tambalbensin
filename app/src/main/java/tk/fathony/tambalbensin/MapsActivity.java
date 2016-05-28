@@ -8,6 +8,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBarActivity;
+import android.text.Html;
+import android.util.Log;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -21,15 +25,28 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+
 public class MapsActivity extends ActionBarActivity implements OnMapReadyCallback,
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
+        GoogleMap.InfoWindowAdapter, GoogleMap.OnMarkerClickListener ,
+        GoogleMap.OnInfoWindowClickListener{
 
     private static final int REQUEST_PERMISSION_LOCATION = 0;
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private GoogleMap map;
+    private ArrayList<Bundle> data = new ArrayList<>();
+    private ArrayList<Marker> mMarker = new ArrayList<>();
+    private String jenis;
+    private View mInfoWindow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +64,6 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
             e.printStackTrace();
         }
         map.getMapAsync(this);
-        //tes
 
 
         if (mGoogleApiClient == null) {
@@ -57,23 +73,62 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
                     .addApi(LocationServices.API)
                     .build();
         }
+
+        Bundle data = getIntent().getExtras();
+        String url = data.getString("url");
+        InternetConnection ic = new InternetConnection(this, true) {
+            @Override
+            protected void OnSuccess(JSONArray result) {
+                parseData(result);
+            }
+        };
+        ic.get(url);
+        jenis = data.getString("jenis");
+        mInfoWindow = getLayoutInflater().inflate(R.layout.infowindow,null);
     }
 
+    private void parseData(JSONArray result){
+        try{
+            for(int i=0;i<result.length();i++){
+                JSONObject obj = result.getJSONObject(i);
+                Bundle row = new Bundle();
+                row.putInt("id",obj.getInt("id"));
+                row.putString("nama",obj.getString("nama"));
+                row.putString("alamat",obj.getString("alamat"));
+                row.putString("keterangan",obj.getString("keterangan"));
+                row.putString("latitude",obj.getString("latitude"));
+                row.putString("longitude",obj.getString("longitude"));
+                data.add(row);
+            }
+        }catch (JSONException ex){ ex.printStackTrace();}
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                drawMarker();
+            }
+        });
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
+    }
+
+    private void drawMarker(){
+        if(data.isEmpty() || map==null) return;
+
+        for(Bundle d: data){
+            Marker m = map.addMarker(new MarkerOptions().position(new LatLng(Double.parseDouble(d.getString("latitude")),
+                    Double.parseDouble(d.getString("longitude"))))
+                    .title(d.getString("nama"))
+                    .snippet(d.getString("keterangan"))
+                    .icon(BitmapDescriptorFactory.fromResource(
+                            jenis.equals("pom")?R.drawable.marker_pom:R.drawable.marker_ban))
+            );
+            mMarker.add(m);
+        }
+    }
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
 
-        // Add a marker in Sydney and move the camera
         LatLng sidoarjo = new LatLng(-7.45,112.7);
         CameraPosition providerLocation =
                 new CameraPosition.Builder().target(sidoarjo)
@@ -81,7 +136,9 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
                         .build();
         map.moveCamera(CameraUpdateFactory.newCameraPosition(providerLocation));
 
-
+        drawMarker();
+        map.setOnMarkerClickListener(this);
+        map.setInfoWindowAdapter(this);
     }
 
     @Override
@@ -151,5 +208,54 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
+    }
+
+    @Override
+    public View getInfoWindow(Marker marker) {
+        for(int i=0;i<mMarker.size();i++){
+            if(mMarker.get(i).equals(marker)){
+                return render(i);
+            }
+        }
+        return null;
+    }
+
+    private View render(int i){
+        Bundle b = data.get(i);
+
+        ((TextView)mInfoWindow.findViewById(R.id.title)).setText(b.getString("nama"));
+        ((TextView)mInfoWindow.findViewById(R.id.alamat)).setText(b.getString("alamat"));
+
+        ((TextView)mInfoWindow.findViewById(R.id.keterangan)).setText(Html.fromHtml(b.getString("keterangan")));
+        mInfoWindow.findViewById(R.id.btnGotohere).setOnClickListener(new goToHereListener(b.getInt("id")));
+        return mInfoWindow;
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+
+    }
+
+    private class goToHereListener implements View.OnClickListener{
+        private final int id;
+
+        goToHereListener(int id){
+            this.id = id;
+        }
+        @Override
+        public void onClick(View view) {
+            Log.i("jeki","id:"+id);
+        }
+    }
+
+    @Override
+    public View getInfoContents(Marker marker) {
+        return null;
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        marker.showInfoWindow();
+        return true;
     }
 }

@@ -15,25 +15,41 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <Button
-            android:layout_width="wrap_content"
+            android:layout_width="200dp"
+            android:background="@drawable/btnbg"
             android:layout_height="wrap_content"
             android:text="Pom Bensin"
-            android:drawableLeft="@drawable/ban"
+            android:drawableLeft="@drawable/pom"
+            android:drawablePadding="15dp"
+            android:layout_marginBottom="15dp"
+            android:onClick="mapPom"
             android:id="@+id/btnPom" />
         <Button
-            android:layout_width="wrap_content"
+            android:layout_width="200dp"
+            android:background="@drawable/btnbg"
             android:layout_height="wrap_content"
-            android:text="New Button"
+            android:text="Tambal Ban"
+            android:drawablePadding="15dp"
+            android:layout_marginBottom="15dp"
+            android:drawableLeft="@drawable/ban"
             android:id="@+id/btnBan" />
         <Button
-            android:layout_width="wrap_content"
+            android:layout_width="200dp"
+            android:background="@drawable/btnbg"
             android:layout_height="wrap_content"
-            android:text="New Button"
+            android:text="Tentang"
+            android:layout_marginBottom="15dp"
+            android:drawablePadding="15dp"
+            android:drawableLeft="@drawable/tentang"
             android:id="@+id/btnTentang" />
         <Button
-            android:layout_width="wrap_content"
+            android:layout_width="200dp"
+            android:background="@drawable/btnbg"
             android:layout_height="wrap_content"
-            android:text="New Button"
+            android:text="Bantuan"
+            android:layout_marginBottom="15dp"
+            android:drawablePadding="15dp"
+            android:drawableLeft="@drawable/bantuan"
             android:id="@+id/btnBantuan" />
     </LinearLayout>
 </RelativeLayout>
