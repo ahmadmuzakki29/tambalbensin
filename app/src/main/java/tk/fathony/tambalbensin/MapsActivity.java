@@ -8,7 +8,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -48,6 +47,7 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
             e.printStackTrace();
         }
         map.getMapAsync(this);
+        //tes
 
 
         if (mGoogleApiClient == null) {
@@ -129,7 +129,7 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
         }
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
-        Log.i("jeki","last location : "+mLastLocation.toString());
+
         if (mLastLocation != null) {
             MarkerOptions opt = new MarkerOptions();
             opt.position(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
