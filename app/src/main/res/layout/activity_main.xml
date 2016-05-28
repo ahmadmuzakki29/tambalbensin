@@ -32,6 +32,7 @@
             android:drawablePadding="15dp"
             android:layout_marginBottom="15dp"
             android:drawableLeft="@drawable/ban"
+            android:onClick="mapBan"
             android:id="@+id/btnBan" />
         <Button
             android:layout_width="200dp"
