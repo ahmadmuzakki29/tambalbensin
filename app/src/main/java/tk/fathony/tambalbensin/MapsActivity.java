@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.view.View;
@@ -90,6 +91,14 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
         };
         ic.get(url);
         jenis = data.getString("jenis");
+        ActionBar ab = getSupportActionBar();
+        if(ab!=null){
+            ab.setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME | ActionBar.DISPLAY_SHOW_TITLE);
+            ab.setTitle(jenis.equals("pom")?"Pom Bensin":"Tambal Ban");
+            ab.setIcon(getResources().getDrawable(jenis.equals("pom")?
+                    R.drawable.marker_pom:R.drawable.marker_ban));
+
+        }
         mInfoWindow = getLayoutInflater().inflate(R.layout.infowindow,null);
     }
 
@@ -304,7 +313,7 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
             // Menambahkan semua points dalam rute ke LineOptions
             lineOptions.addAll(points);
             lineOptions.width(4);
-            lineOptions.color(Color.BLUE);
+            lineOptions.color(jenis.equals("pom")?Color.YELLOW:Color.BLUE);
         }
 
         curPolyline = map.addPolyline(lineOptions);

@@ -2,10 +2,10 @@ package tk.fathony.tambalbensin;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends ActionBarActivity {
 
     private static final String HOST = "http://pombensin.tk/";
     private static final String URL_POM = "pom.php";
@@ -30,4 +30,13 @@ public class MainActivity extends AppCompatActivity {
         in.putExtra("jenis","ban");
         startActivity(in);
     }
+
+    public void tentang(View v){
+        startActivity(new Intent(this,TentangActivity.class));
+    }
+
+    public void bantuan(View v){
+        startActivity(new Intent(this,BantuanActivity.class));
+    }
+
 }
