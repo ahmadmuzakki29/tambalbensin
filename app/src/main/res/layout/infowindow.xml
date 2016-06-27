@@ -5,6 +5,12 @@
     android:background="@drawable/infowindow"
     android:padding="15dp">
 
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:id="@+id/imageView" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

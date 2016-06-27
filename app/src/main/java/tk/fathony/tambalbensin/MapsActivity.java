@@ -3,6 +3,7 @@ package tk.fathony.tambalbensin;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -11,10 +12,16 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
+import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.ViewTarget;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -52,7 +59,7 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
     private ArrayList<Marker> mMarker = new ArrayList<>();
     private String jenis;
     private View mInfoWindow;
-    private String DIRECTION_URL = "https://maps.googleapis.com/maps/api/directions/json?";
+    private static final String DIRECTION_URL = "https://maps.googleapis.com/maps/api/directions/json?";
     private Polyline curPolyline;
 
     @Override
@@ -113,6 +120,7 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
                 row.putString("keterangan",obj.getString("keterangan"));
                 row.putString("latitude",obj.getString("latitude"));
                 row.putString("longitude",obj.getString("longitude"));
+                row.putString("foto",obj.getString("foto"));
                 data.add(row);
             }
         }catch (JSONException ex){ ex.printStackTrace();}
@@ -238,7 +246,27 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
 
     private View render(int i){
         Bundle b = data.get(i);
+        final Marker marker = mMarker.get(i);
 
+
+        Glide.with(this)
+                .load(b.getString("foto"))
+                .centerCrop()
+                .into(new ViewTarget<View, GlideDrawable>(mInfoWindow) {
+                @Override
+                public void onResourceReady(GlideDrawable resource, GlideAnimation anim) {
+
+                    View myView = this.view;
+                    ImageView mImageView = (ImageView) myView.findViewById(R.id.imageView);
+                    Drawable d = mImageView.getDrawable();
+                    if(d!=null)return;
+
+                    mImageView.setImageDrawable(resource);
+                    marker.hideInfoWindow();
+                    marker.showInfoWindow();
+                    Log.i("jeki","refreshing");
+                }
+            });
         ((TextView)mInfoWindow.findViewById(R.id.title)).setText(b.getString("nama"));
         ((TextView)mInfoWindow.findViewById(R.id.alamat)).setText(b.getString("alamat"));
 
@@ -327,6 +355,8 @@ public class MapsActivity extends ActionBarActivity implements OnMapReadyCallbac
 
     @Override
     public boolean onMarkerClick(Marker marker) {
+        ImageView mImageView = (ImageView) mInfoWindow.findViewById(R.id.imageView);
+        mImageView.setImageDrawable(null);
         marker.showInfoWindow();
         return true;
     }
